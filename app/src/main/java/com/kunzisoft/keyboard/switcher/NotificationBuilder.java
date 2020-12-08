@@ -15,8 +15,8 @@ public class NotificationBuilder {
 	public static final String CHANNEL_ID_KEYBOARD = "com.kunzisoft.keyboard.notification.channel";
 	public static final String CHANNEL_NAME_KEYBOARD = "Keyboard switcher notification";
 
-	private NotificationManager mNotificationManager;
-	private int notificationId = 45;
+	private final NotificationManager mNotificationManager;
+	private final int notificationId = 45;
 
 	public NotificationBuilder(NotificationManager notificationManager) {
 		this.mNotificationManager = notificationManager;
