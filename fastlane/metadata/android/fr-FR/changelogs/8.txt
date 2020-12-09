@@ -1,1 +1,5 @@
- *
+ * Correction de la notification qui disparait
+ * Correction de l'affichage de la popup
+ * Seulement une notification pour Android O
+ * Changement de la taille du widget
+ * Correction de crash
