@@ -6,9 +6,6 @@
     <string name="notification_keyboard_title">Selecionar teclado</string>
     <string name="notification_keyboard_content_text">Toque para selecionar o teclado.</string>
 
-    <string name="notification_floating_button_title">Botão de teclado</string>
-    <string name="notification_floating_button_content_text">Serviço de botão flutuante de teclado ativado.</string>
-
     <string name="general">Geral</string>
 
     <string name="settings_ime_available_title">Teclados disponíveis</string>

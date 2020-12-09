@@ -39,7 +39,7 @@
             </intent-filter>
         </receiver>
 
-        <service android:name=".OverlayShowingService" />
+        <service android:name=".KeyboardSwitcherService" />
 
         <receiver android:name=".KeyboardWidgetProvider" >
             <intent-filter>

@@ -6,9 +6,6 @@
     <string name="notification_keyboard_title">Changer le clavier</string>
     <string name="notification_keyboard_content_text">Appuyer pour sélectionner le clavier par défaut.</string>
 
-    <string name="notification_floating_button_title">Bouton Clavier</string>
-    <string name="notification_floating_button_content_text">Service de bouton flottant de clavier activé.</string>
-
     <string name="general">Général</string>
 
     <string name="settings_ime_available_title">Claviers disponibles</string>

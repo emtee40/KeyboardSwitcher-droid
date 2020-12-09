@@ -9,9 +9,6 @@
     <string name="notification_keyboard_title">Switch the keyboard</string>
     <string name="notification_keyboard_content_text">Tap to select the default keyboard.</string>
 
-    <string name="notification_floating_button_title">Keyboard button</string>
-    <string name="notification_floating_button_content_text">Keyboard floating button service activated.</string>
-
     <string name="general">General</string>
 
     <string name="settings_ime_available_key" translatable="false">settings_ime_available_key</string>
