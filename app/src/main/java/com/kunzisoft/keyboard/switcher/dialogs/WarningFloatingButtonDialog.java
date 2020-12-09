@@ -27,7 +27,7 @@ public class WarningFloatingButtonDialog extends DialogFragment {
     }
 
     @Override
-    public void onAttach(Context activity) {
+    public void onAttach(@NonNull Context activity) {
         super.onAttach(activity);
         try {
             onClickListener = (OnFloatingButtonListener) activity;

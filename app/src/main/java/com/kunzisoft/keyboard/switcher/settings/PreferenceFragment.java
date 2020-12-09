@@ -1,6 +1,5 @@
 package com.kunzisoft.keyboard.switcher.settings;
 
-import android.app.NotificationManager;
 import android.content.ActivityNotFoundException;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -9,24 +8,25 @@ import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
 
-import com.kunzisoft.androidclearchroma.ChromaPreferenceFragmentCompat;
-import com.kunzisoft.keyboard.switcher.NotificationBuilder;
-import com.kunzisoft.keyboard.switcher.OverlayShowingService;
-import com.kunzisoft.keyboard.switcher.R;
-import com.kunzisoft.keyboard.switcher.dialogs.WarningFloatingButtonDialog;
-import com.kunzisoft.keyboard.switcher.utils.Utilities;
-
 import androidx.annotation.ColorInt;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AlertDialog;
 import androidx.preference.Preference;
+import androidx.preference.SeekBarPreference;
 import androidx.preference.SwitchPreference;
 
-import static android.content.Context.NOTIFICATION_SERVICE;
+import com.kunzisoft.androidclearchroma.ChromaPreferenceFragmentCompat;
+import com.kunzisoft.keyboard.switcher.KeyboardSwitcherService;
+import com.kunzisoft.keyboard.switcher.R;
+import com.kunzisoft.keyboard.switcher.dialogs.WarningFloatingButtonDialog;
+import com.kunzisoft.keyboard.switcher.utils.Utilities;
 
-public class PreferenceFragment extends ChromaPreferenceFragmentCompat
-        implements Preference.OnPreferenceClickListener,
-        Preference.OnPreferenceChangeListener {
+import static com.kunzisoft.keyboard.switcher.KeyboardSwitcherService.FLOATING_BUTTON_START;
+import static com.kunzisoft.keyboard.switcher.KeyboardSwitcherService.FLOATING_BUTTON_STOP;
+import static com.kunzisoft.keyboard.switcher.KeyboardSwitcherService.NOTIFICATION_START;
+import static com.kunzisoft.keyboard.switcher.KeyboardSwitcherService.NOTIFICATION_STOP;
+
+public class PreferenceFragment extends ChromaPreferenceFragmentCompat {
 
     /* https://stackoverflow.com/questions/7569937/unable-to-add-window-android-view-viewrootw44da9bc0-permission-denied-for-t
     code to post/handler request for permission
@@ -35,8 +35,6 @@ public class PreferenceFragment extends ChromaPreferenceFragmentCompat
 
     private SwitchPreference preferenceNotification;
     private SwitchPreference preferenceFloatingButton;
-
-    private NotificationBuilder mNotificationBuilder;
 
     private boolean tryToOpenExternalDialog;
 
@@ -52,6 +50,10 @@ public class PreferenceFragment extends ChromaPreferenceFragmentCompat
 					preferenceFloatingButton.setChecked(false);
 			}
 		}
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
+				&& preferenceFloatingButton.isChecked()) {
+			preferenceNotification.setEnabled(false);
+		}
 	}
 
 	@Override
@@ -60,36 +62,79 @@ public class PreferenceFragment extends ChromaPreferenceFragmentCompat
 
         // add listeners for non-default actions
         findPreference(getString(R.string.settings_ime_available_key))
-                .setOnPreferenceClickListener(this);
+                .setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+					@Override
+					public boolean onPreferenceClick(Preference preference) {
+						Utilities.openAvailableKeyboards(getContext());
+						return false;
+					}
+				});
         findPreference(getString(R.string.settings_ime_change_key))
-                .setOnPreferenceClickListener(this);
+                .setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+					@Override
+					public boolean onPreferenceClick(Preference preference) {
+						Utilities.chooseAKeyboard(getContext());
+						return false;
+					}
+				});
 
-        preferenceNotification = (SwitchPreference) findPreference(getString(R.string.settings_notification_key));
-        preferenceNotification.setOnPreferenceChangeListener(this);
-        if (getContext() != null) {
-			mNotificationBuilder =
-					new NotificationBuilder((NotificationManager) getContext().getSystemService(NOTIFICATION_SERVICE));
-		}
+        preferenceNotification = findPreference(getString(R.string.settings_notification_key));
+        preferenceNotification.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+			@Override
+			public boolean onPreferenceClick(Preference preference) {
+				if (preferenceNotification.isChecked()) {
+					if (getActivity() != null) {
+						Intent intent = new Intent(getActivity(), KeyboardSwitcherService.class);
+						intent.setAction(NOTIFICATION_START);
+						getActivity().startService(intent);
+					}
+				} else {
+					stopKeyboardSwitcherService();
+				}
+				return false;
+			}
+		});
 
-        preferenceFloatingButton = (SwitchPreference) findPreference(getString(R.string.settings_floating_button_key));
-        preferenceFloatingButton.setOnPreferenceChangeListener(this);
+        preferenceFloatingButton = findPreference(getString(R.string.settings_floating_button_key));
+        preferenceFloatingButton.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+			@Override
+			public boolean onPreferenceClick(Preference preference) {
+				if (preferenceFloatingButton.isChecked()) {
+					preferenceFloatingButton.setChecked(false);
+					if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+						WarningFloatingButtonDialog dialogFragment = new WarningFloatingButtonDialog();
+						if (getParentFragmentManager() != null)
+							dialogFragment.show(getParentFragmentManager(), "warning_floating_button_dialog");
+					} else {
+						startFloatingButtonAndCheckButton();
+					}
+				} else {
+					stopFloatingButtonAndUncheckedButton();
+				}
+				return false;
+			}
+		});
 
         findPreference(getString(R.string.settings_floating_button_lock_key))
-                .setOnPreferenceChangeListener(this);
-    }
-
-    @Override
-    public boolean onPreferenceClick(Preference preference) {
-        // here you should use the same keys as you used in the xml-file
-        if (preference.getKey().equals(getString(R.string.settings_ime_available_key))) {
-            Utilities.openAvailableKeyboards(getContext());
-        }
-
-        if (preference.getKey().equals(getString(R.string.settings_ime_change_key))) {
-            Utilities.chooseAKeyboard(getContext());
-        }
-
-        return false;
+                .setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
+					@Override
+					public boolean onPreferenceChange(Preference preference, Object newValue) {
+						SwitchPreference switchPreference = (SwitchPreference) preference;
+						switchPreference.setChecked((Boolean) newValue);
+						restartFloatingButtonAndCheckedButton();
+						return false;
+					}
+				});
+        findPreference(getString(R.string.settings_floating_size_key))
+                .setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
+					@Override
+					public boolean onPreferenceChange(Preference preference, Object newValue) {
+						SeekBarPreference seekBarPreference = (SeekBarPreference) preference;
+						seekBarPreference.setValue((int) newValue);
+						restartFloatingButtonAndCheckedButton();
+						return false;
+					}
+				});
     }
 
     @Override
@@ -99,48 +144,6 @@ public class PreferenceFragment extends ChromaPreferenceFragmentCompat
     public void onPositiveButtonClick(@ColorInt int color) {
         super.onPositiveButtonClick(color);
         restartFloatingButtonAndCheckedButton();
-    }
-
-    @Override
-    public boolean onPreferenceChange(Preference preference, Object newValue) {
-
-        if (preference.getKey().equals(getString(R.string.settings_notification_key))) {
-            SwitchPreference switchPreference = (SwitchPreference) preference;
-            boolean notificationEnabled = (Boolean) newValue;
-            switchPreference.setChecked(notificationEnabled);
-
-            if (notificationEnabled) {
-                startNotificationAndCheckButton();
-            } else {
-                stopNotificationAndUncheckButton();
-            }
-        }
-
-		if (preference.getKey().equals(getString(R.string.settings_floating_button_key))) {
-			SwitchPreference switchPreference = (SwitchPreference) preference;
-			boolean floatingButtonEnabled = (Boolean) newValue;
-			switchPreference.setChecked(floatingButtonEnabled);
-
-			if (floatingButtonEnabled) {
-				if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-					WarningFloatingButtonDialog dialogFragment = new WarningFloatingButtonDialog();
-					if (getFragmentManager() != null)
-						dialogFragment.show(getFragmentManager(), "warning_floating_button_dialog");
-				} else {
-					startFloatingButtonAndCheckButton();
-				}
-			} else {
-				stopFloatingButtonAndUncheckedButton();
-			}
-		}
-
-        if (preference.getKey().equals(getString(R.string.settings_floating_button_lock_key))) {
-            SwitchPreference switchPreference = (SwitchPreference) preference;
-            switchPreference.setChecked((Boolean) newValue);
-            restartFloatingButtonAndCheckedButton();
-        }
-
-        return false;
     }
 
     @RequiresApi(api = Build.VERSION_CODES.M)
@@ -194,73 +197,65 @@ public class PreferenceFragment extends ChromaPreferenceFragmentCompat
     	return tryToOpenExternalDialog;
 	}
 
-    /*
-    ------ Notification Service ------
-     */
-
-	private void startNotificationAndCheckButton() {
-		if(mNotificationBuilder != null) {
-			mNotificationBuilder.createKeyboardNotification(getContext());
+	private void startFloatingButton() {
+		if (getActivity() != null) {
+			Intent intent = new Intent(getActivity(), KeyboardSwitcherService.class);
+			intent.setAction(FLOATING_BUTTON_START);
+			getActivity().startService(intent);
 		}
-        if (preferenceNotification != null)
-            preferenceNotification.setChecked(true);
-    }
+	}
 
-	private void stopNotificationAndUncheckButton() {
-		if(mNotificationBuilder != null) {
-			mNotificationBuilder.cancelKeyboardNotification();
+	private void stopKeyboardSwitcherService() {
+		if (getActivity() != null) {
+			Intent intent = new Intent(getActivity(), KeyboardSwitcherService.class);
+			if (!preferenceNotification.isChecked() && !preferenceFloatingButton.isChecked()) {
+				getActivity().stopService(intent);
+			} else if (preferenceNotification.isChecked() && !preferenceFloatingButton.isChecked()) {
+				intent.setAction(FLOATING_BUTTON_STOP);
+				getActivity().startService(intent);
+			} else if (!preferenceNotification.isChecked() && preferenceFloatingButton.isChecked()) {
+				intent.setAction(NOTIFICATION_STOP);
+				getActivity().startService(intent);
+			}
 		}
-        if (preferenceNotification != null)
-            preferenceNotification.setChecked(false);
-    }
+	}
 
     /*
     ------ Floating Button Service ------
     */
 
-	private void stopFloatingButtonService() {
-		if (getActivity() != null) {
-			getActivity().stopService(new Intent(getActivity(), OverlayShowingService.class));
-		}
-	}
-
-    private void startFloatingButtonService() {
-		if (getActivity() != null) {
-			Intent floatingButtonService = new Intent(getActivity(), OverlayShowingService.class);
-			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-				getActivity().startForegroundService(floatingButtonService);
-			} else {
-				getActivity().startService(floatingButtonService);
-			}
-		}
-	}
-
     void startFloatingButtonAndCheckButton() {
-		stopFloatingButtonService();
+		stopKeyboardSwitcherService();
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
 			if (drawOverlayPermissionAllowed()) {
-				startFloatingButtonService();
+				startFloatingButton();
 			} else {
 				if (preferenceFloatingButton != null)
 					preferenceFloatingButton.setChecked(false);
+				if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+					preferenceNotification.setEnabled(false);
 			}
 		} else {
-			startFloatingButtonService();
+			startFloatingButton();
 		}
         if (preferenceFloatingButton != null)
             preferenceFloatingButton.setChecked(true);
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+			preferenceNotification.setEnabled(false);
     }
 
     void stopFloatingButtonAndUncheckedButton() {
-        stopFloatingButtonService();
+    	stopKeyboardSwitcherService();
         if (preferenceFloatingButton != null)
             preferenceFloatingButton.setChecked(false);
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+			preferenceNotification.setEnabled(true);
     }
 
     private void restartFloatingButtonAndCheckedButton() {
         // Restart service
         if (getActivity() != null) {
-            getActivity().stopService(new Intent(getActivity(), OverlayShowingService.class));
+            getActivity().stopService(new Intent(getActivity(), KeyboardSwitcherService.class));
         }
 		startFloatingButtonAndCheckButton();
     }

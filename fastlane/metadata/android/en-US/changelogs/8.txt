@@ -1,0 +1,5 @@
+ * Fix notification disappearing
+ * Fix popup diplay
+ * Only one notification in Android O
+ * Change widget size
+ * Fix crash
