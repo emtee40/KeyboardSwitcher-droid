@@ -32,7 +32,7 @@ public class BootUpActivity extends AppCompatActivity{
             intent.setAction(NOTIFICATION_START);
             startService(intent);
         }
-        else if (preferences.getBoolean(getString(R.string.settings_floating_button_key), false)) {
+        if (preferences.getBoolean(getString(R.string.settings_floating_button_key), false)) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 if (Settings.canDrawOverlays(getApplicationContext())) {
                     intent.setAction(FLOATING_BUTTON_START);
