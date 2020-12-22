@@ -238,7 +238,7 @@ public class KeyboardSwitcherService extends Service implements OnTouchListener,
                 PositionOrientation positionPortrait = (new Gson()).fromJson(preferences.getString(POSITION_PORTRAIT, null), PositionOrientation.class);
                 overlayedButtonParams.x = positionPortrait.positionToSave[0];
                 overlayedButtonParams.y = positionPortrait.positionToSave[1];
-                setOverlayedDrawableResource(positionPortrait.overlayedButtonResourceId);
+                overlayedButton.setImageResource(positionPortrait.overlayedButtonResourceId);
                 currentPosition = positionPortrait;
             }
             if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE
@@ -246,7 +246,7 @@ public class KeyboardSwitcherService extends Service implements OnTouchListener,
                 PositionOrientation positionLandscape = (new Gson()).fromJson(preferences.getString(POSITION_LANDSCAPE, null), PositionOrientation.class);
                 overlayedButtonParams.x = positionLandscape.positionToSave[0];
                 overlayedButtonParams.y = positionLandscape.positionToSave[1];
-                setOverlayedDrawableResource(positionLandscape.overlayedButtonResourceId);
+                overlayedButton.setImageResource(positionLandscape.overlayedButtonResourceId);
                 currentPosition = positionLandscape;
             }
             int defaultSize = (int) (32 * getResources().getDisplayMetrics().density);
