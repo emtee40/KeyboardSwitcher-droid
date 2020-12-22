@@ -1,1 +1,2 @@
  * Fix launch at startup
+ * Save position for each orientation

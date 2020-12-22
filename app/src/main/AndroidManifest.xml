@@ -39,7 +39,8 @@
             </intent-filter>
         </receiver>
 
-        <service android:name=".KeyboardSwitcherService" />
+        <service android:name=".KeyboardSwitcherService"
+            android:configChanges="orientation"/>
 
         <receiver android:name=".KeyboardWidgetProvider" >
             <intent-filter>
