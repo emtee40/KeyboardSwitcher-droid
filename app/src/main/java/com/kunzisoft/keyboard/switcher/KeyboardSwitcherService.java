@@ -11,6 +11,8 @@ import android.content.res.Configuration;
 import android.graphics.PixelFormat;
 import android.os.Build;
 import android.os.IBinder;
+import android.os.Parcel;
+import android.os.Parcelable;
 import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.Gravity;
@@ -28,6 +30,7 @@ import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 import androidx.core.content.ContextCompat;
 
+import com.google.gson.Gson;
 import com.kunzisoft.keyboard.switcher.utils.Utilities;
 
 import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
@@ -45,27 +48,61 @@ public class KeyboardSwitcherService extends Service implements OnTouchListener,
     public static String FLOATING_BUTTON_STOP = "FLOATING_BUTTON_STOP";
 
     private SharedPreferences preferences;
-    private static final String Y_POSITION_PREFERENCE_KEY = "Y_POSITION_PREFERENCE_KEY";
-    private static final String X_POSITION_PREFERENCE_KEY = "X_POSITION_PREFERENCE_KEY";
-    private static final String DRAWABLE_PREFERENCE_KEY = "DRAWABLE_PREFERENCE_KEY";
-    private static final String ORIENTATION_PREFERENCE_KEY = "ORIENTATION_PREFERENCE_KEY";
-    private int xPositionToSave;
-    private int yPositionToSave;
+    private static final String POSITION_PORTRAIT = "POSITION_PORTRAIT";
+    private static final String POSITION_LANDSCAPE = "POSITION_LANDSCAPE";
 
     private View topLeftView;
     private View bottomRightView;
 
     private ImageView overlayedButton;
-    @DrawableRes
-    private int overlayedButtonResourceId = R.drawable.ic_keyboard_white_32dp;
-    private float offsetX;
-    private float offsetY;
-    private int originalXPos;
-    private int originalYPos;
     private boolean moving;
     private WindowManager windowManager;
 
     private boolean lockedButton;
+
+    private PositionOrientation currentPosition = new PositionOrientation();
+
+    private static class PositionOrientation implements Parcelable {
+        @DrawableRes
+        int overlayedButtonResourceId = R.drawable.ic_keyboard_white_32dp;
+        int[] positionToSave = {0, 0};
+        float[] offset = {0F, 0F};
+        int[] originalPosition = {0, 0};
+
+        PositionOrientation() {}
+
+        protected PositionOrientation(Parcel in) {
+            overlayedButtonResourceId = in.readInt();
+            positionToSave = in.createIntArray();
+            offset = in.createFloatArray();
+            originalPosition = in.createIntArray();
+        }
+
+        public static final Creator<PositionOrientation> CREATOR = new Creator<PositionOrientation>() {
+            @Override
+            public PositionOrientation createFromParcel(Parcel in) {
+                return new PositionOrientation(in);
+            }
+
+            @Override
+            public PositionOrientation[] newArray(int size) {
+                return new PositionOrientation[size];
+            }
+        };
+
+        @Override
+        public int describeContents() {
+            return 0;
+        }
+
+        @Override
+        public void writeToParcel(Parcel parcel, int i) {
+            parcel.writeInt(overlayedButtonResourceId);
+            parcel.writeIntArray(positionToSave);
+            parcel.writeFloatArray(offset);
+            parcel.writeIntArray(originalPosition);
+        }
+    }
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -124,86 +161,7 @@ public class KeyboardSwitcherService extends Service implements OnTouchListener,
 
             if (intent.getAction().equals(FLOATING_BUTTON_START)
                 && preferences.getBoolean(getString(R.string.settings_floating_button_key), false)) {
-                try {
-                    // check Button Position
-                    lockedButton = preferences.getBoolean(getString(R.string.settings_floating_button_lock_key), false);
-
-                    int typeFilter = LayoutParams.TYPE_SYSTEM_ALERT;
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                        typeFilter = LayoutParams.TYPE_APPLICATION_OVERLAY;
-                    }
-
-                    overlayedButton = new ImageView(this);
-                    @ColorRes int color = preferences.getInt(getString(R.string.settings_colors_key),
-                            ContextCompat.getColor(this, R.color.colorPrimary));
-                    overlayedButton.setImageResource(R.drawable.ic_keyboard_white_32dp);
-                    overlayedButton.setColorFilter(color);
-                    overlayedButton.setAlpha((color >> 24) & 0xff);
-                    overlayedButton.setOnTouchListener(this);
-                    overlayedButton.setOnClickListener(this);
-
-                    // Point reference on top left
-                    topLeftView = new View(this);
-                    LayoutParams topLeftParams =
-                            new LayoutParams(LayoutParams.WRAP_CONTENT,
-                                    LayoutParams.WRAP_CONTENT,
-                                    typeFilter,
-                                    LayoutParams.FLAG_NOT_FOCUSABLE
-                                            | LayoutParams.FLAG_NOT_TOUCH_MODAL,
-                                    PixelFormat.TRANSLUCENT);
-                    topLeftParams.gravity = Gravity.START | Gravity.TOP;
-                    topLeftParams.x = 0;
-                    topLeftParams.y = 0;
-                    topLeftParams.width = 0;
-                    topLeftParams.height = 0;
-                    windowManager.addView(topLeftView, topLeftParams);
-
-                    // Point reference on bottom right
-                    bottomRightView = new View(this);
-                    LayoutParams bottomRightParams =
-                            new LayoutParams(LayoutParams.WRAP_CONTENT,
-                                    LayoutParams.WRAP_CONTENT,
-                                    typeFilter,
-                                    LayoutParams.FLAG_NOT_FOCUSABLE
-                                            | LayoutParams.FLAG_NOT_TOUCH_MODAL,
-                                    PixelFormat.TRANSLUCENT);
-                    bottomRightParams.gravity = Gravity.END | Gravity.BOTTOM;
-                    bottomRightParams.x = 0;
-                    bottomRightParams.y = 0;
-                    bottomRightParams.width = 0;
-                    bottomRightParams.height = 0;
-                    windowManager.addView(bottomRightView, bottomRightParams);
-
-                    LayoutParams overlayedButtonParams =
-                            new LayoutParams(LayoutParams.WRAP_CONTENT,
-                                    LayoutParams.WRAP_CONTENT,
-                                    typeFilter,
-                                    LayoutParams.FLAG_NOT_FOCUSABLE
-                                            | LayoutParams.FLAG_NOT_TOUCH_MODAL,
-                                    PixelFormat.TRANSLUCENT);
-                    overlayedButtonParams.gravity = Gravity.CENTER;
-                    overlayedButtonParams.x = 0;
-                    overlayedButtonParams.y = 0;
-                    if (preferences.contains(X_POSITION_PREFERENCE_KEY)) {
-                        xPositionToSave = preferences.getInt(X_POSITION_PREFERENCE_KEY, overlayedButtonParams.y);
-                        overlayedButtonParams.x = xPositionToSave;
-                    }
-                    if (preferences.contains(Y_POSITION_PREFERENCE_KEY)) {
-                        yPositionToSave = preferences.getInt(Y_POSITION_PREFERENCE_KEY, overlayedButtonParams.x);
-                        overlayedButtonParams.y = yPositionToSave;
-                    }
-                    if (preferences.contains(DRAWABLE_PREFERENCE_KEY)) {
-                        setOverlayedDrawableResource(preferences.getInt(DRAWABLE_PREFERENCE_KEY, overlayedButtonResourceId));
-                    }
-                    int defaultSize = (int) (32 * getResources().getDisplayMetrics().density);
-                    int sizeMultiplier = preferences.getInt(getString(R.string.settings_floating_size_key), 50);
-                    overlayedButtonParams.width = defaultSize * sizeMultiplier / 100;
-                    overlayedButtonParams.height = defaultSize * sizeMultiplier / 100;
-
-                    windowManager.addView(overlayedButton, overlayedButtonParams);
-                } catch (Exception e) {
-                    Log.e("KeyboardSwitcherService", "Unable to show floating button", e);
-                }
+                createRemoteView();
             }
 
             if (intent.getAction().equals(FLOATING_BUTTON_STOP)) {
@@ -214,23 +172,106 @@ public class KeyboardSwitcherService extends Service implements OnTouchListener,
         return super.onStartCommand(intent, flags, startId);
     }
 
+    private void createRemoteView() {
+        try {
+            // check Button Position
+            lockedButton = preferences.getBoolean(getString(R.string.settings_floating_button_lock_key), false);
+
+            int typeFilter = LayoutParams.TYPE_SYSTEM_ALERT;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                typeFilter = LayoutParams.TYPE_APPLICATION_OVERLAY;
+            }
+
+            overlayedButton = new ImageView(this);
+            @ColorRes int color = preferences.getInt(getString(R.string.settings_colors_key),
+                    ContextCompat.getColor(this, R.color.colorPrimary));
+            overlayedButton.setImageResource(R.drawable.ic_keyboard_white_32dp);
+            overlayedButton.setColorFilter(color);
+            overlayedButton.setAlpha((color >> 24) & 0xff);
+            overlayedButton.setOnTouchListener(this);
+            overlayedButton.setOnClickListener(this);
+
+            // Point reference on top left
+            topLeftView = new View(this);
+            LayoutParams topLeftParams =
+                    new LayoutParams(LayoutParams.WRAP_CONTENT,
+                            LayoutParams.WRAP_CONTENT,
+                            typeFilter,
+                            LayoutParams.FLAG_NOT_FOCUSABLE
+                                    | LayoutParams.FLAG_NOT_TOUCH_MODAL,
+                            PixelFormat.TRANSLUCENT);
+            topLeftParams.gravity = Gravity.START | Gravity.TOP;
+            topLeftParams.x = 0;
+            topLeftParams.y = 0;
+            topLeftParams.width = 0;
+            topLeftParams.height = 0;
+            windowManager.addView(topLeftView, topLeftParams);
+
+            // Point reference on bottom right
+            bottomRightView = new View(this);
+            LayoutParams bottomRightParams =
+                    new LayoutParams(LayoutParams.WRAP_CONTENT,
+                            LayoutParams.WRAP_CONTENT,
+                            typeFilter,
+                            LayoutParams.FLAG_NOT_FOCUSABLE
+                                    | LayoutParams.FLAG_NOT_TOUCH_MODAL,
+                            PixelFormat.TRANSLUCENT);
+            bottomRightParams.gravity = Gravity.END | Gravity.BOTTOM;
+            bottomRightParams.x = 0;
+            bottomRightParams.y = 0;
+            bottomRightParams.width = 0;
+            bottomRightParams.height = 0;
+            windowManager.addView(bottomRightView, bottomRightParams);
+
+            LayoutParams overlayedButtonParams =
+                    new LayoutParams(LayoutParams.WRAP_CONTENT,
+                            LayoutParams.WRAP_CONTENT,
+                            typeFilter,
+                            LayoutParams.FLAG_NOT_FOCUSABLE
+                                    | LayoutParams.FLAG_NOT_TOUCH_MODAL,
+                            PixelFormat.TRANSLUCENT);
+            overlayedButtonParams.gravity = Gravity.CENTER;
+            overlayedButtonParams.x = 0;
+            overlayedButtonParams.y = 0;
+            if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT
+                && preferences.contains(POSITION_PORTRAIT)) {
+                PositionOrientation positionPortrait = (new Gson()).fromJson(preferences.getString(POSITION_PORTRAIT, null), PositionOrientation.class);
+                overlayedButtonParams.x = positionPortrait.positionToSave[0];
+                overlayedButtonParams.y = positionPortrait.positionToSave[1];
+                overlayedButton.setImageResource(positionPortrait.overlayedButtonResourceId);
+                currentPosition = positionPortrait;
+            }
+            if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE
+                && preferences.contains(POSITION_LANDSCAPE)) {
+                PositionOrientation positionLandscape = (new Gson()).fromJson(preferences.getString(POSITION_LANDSCAPE, null), PositionOrientation.class);
+                overlayedButtonParams.x = positionLandscape.positionToSave[0];
+                overlayedButtonParams.y = positionLandscape.positionToSave[1];
+                overlayedButton.setImageResource(positionLandscape.overlayedButtonResourceId);
+                currentPosition = positionLandscape;
+            }
+            int defaultSize = (int) (32 * getResources().getDisplayMetrics().density);
+            int sizeMultiplier = preferences.getInt(getString(R.string.settings_floating_size_key), 50);
+            overlayedButtonParams.width = defaultSize * sizeMultiplier / 100;
+            overlayedButtonParams.height = defaultSize * sizeMultiplier / 100;
+
+            windowManager.addView(overlayedButton, overlayedButtonParams);
+        } catch (Exception e) {
+            Log.e("KeyboardSwitcherService", "Unable to show floating button", e);
+        }
+    }
+
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
 
-        int rotation = windowManager.getDefaultDisplay().getRotation();
-        if (rotation != Configuration.ORIENTATION_LANDSCAPE
-                && preferences.getInt(ORIENTATION_PREFERENCE_KEY, rotation) != Configuration.ORIENTATION_PORTRAIT)
-            setOverlayedDrawableResource(R.drawable.ic_keyboard_white_32dp);
-        else {
-            setOverlayedDrawableResource(preferences.getInt(DRAWABLE_PREFERENCE_KEY, overlayedButtonResourceId));
-        }
+        eraseRemoteView();
+        createRemoteView();
     }
 
     private void setOverlayedDrawableResource(@DrawableRes int newDrawableResourceId) {
-        if (newDrawableResourceId != overlayedButtonResourceId) {
-            overlayedButtonResourceId = newDrawableResourceId;
-            overlayedButton.setImageResource(overlayedButtonResourceId);
+        if (newDrawableResourceId != currentPosition.overlayedButtonResourceId) {
+            currentPosition.overlayedButtonResourceId = newDrawableResourceId;
+            overlayedButton.setImageResource(currentPosition.overlayedButtonResourceId);
         }
     }
 
@@ -239,16 +280,17 @@ public class KeyboardSwitcherService extends Service implements OnTouchListener,
         if (overlayedButton != null)
             overlayedButton.getLocationOnScreen(location);
 
-        originalXPos = (int) (location[0] + event.getX());
-        originalYPos = (int) (location[1] + event.getY());
+        currentPosition.originalPosition[0] = (int) (location[0] + event.getX());
+        currentPosition.originalPosition[1] = (int) (location[1] + event.getY());
     }
 
-    private void savePreferencePosition() {
+    private void savePreferencePosition(int position) {
         SharedPreferences.Editor editor = preferences.edit();
-        editor.putInt(X_POSITION_PREFERENCE_KEY, xPositionToSave);
-        editor.putInt(Y_POSITION_PREFERENCE_KEY, yPositionToSave);
-        editor.putInt(DRAWABLE_PREFERENCE_KEY, overlayedButtonResourceId);
-        editor.putInt(ORIENTATION_PREFERENCE_KEY, windowManager.getDefaultDisplay().getRotation());
+        if (position == Configuration.ORIENTATION_LANDSCAPE) {
+            editor.putString(POSITION_LANDSCAPE, (new Gson()).toJson(currentPosition));
+        } else {
+            editor.putString(POSITION_PORTRAIT, (new Gson()).toJson(currentPosition));
+        }
         editor.apply();
     }
 
@@ -275,8 +317,8 @@ public class KeyboardSwitcherService extends Service implements OnTouchListener,
 
         params.x = x - (bottomRightLocationOnScreen[0] + topLeftLocationOnScreen[0]) / 2;
         params.y = y - (bottomRightLocationOnScreen[1] + topLeftLocationOnScreen[1]) / 2;
-        xPositionToSave = params.x;
-        yPositionToSave = params.y;
+        currentPosition.positionToSave[0] = params.x;
+        currentPosition.positionToSave[1] = params.y;
 
         windowManager.updateViewLayout(overlayedButton, params);
     }
@@ -301,18 +343,18 @@ public class KeyboardSwitcherService extends Service implements OnTouchListener,
 
             getPositionOnScreen(event);
 
-            offsetX = originalXPos - x;
-            offsetY = originalYPos - y;
+            currentPosition.offset[0] = currentPosition.originalPosition[0] - x;
+            currentPosition.offset[1] = currentPosition.originalPosition[1] - y;
 
         } else if (event.getAction() == MotionEvent.ACTION_MOVE) {
-            int newX = (int) (offsetX + x);
-            int newY = (int) (offsetY + y);
+            int newX = (int) (currentPosition.offset[0] + x);
+            int newY = (int) (currentPosition.offset[1] + y);
 
             int deltaMoveX = view.getMeasuredWidth() * 3/4;
             int deltaMoveY = view.getMeasuredHeight() * 3/4;
 
-            if (Math.abs(newX - originalXPos) < deltaMoveX
-                    && Math.abs(newY - originalYPos) < deltaMoveY
+            if (Math.abs(newX - currentPosition.originalPosition[0]) < deltaMoveX
+                    && Math.abs(newY - currentPosition.originalPosition[1]) < deltaMoveY
                     && !moving) {
                 return false;
             }
@@ -320,7 +362,7 @@ public class KeyboardSwitcherService extends Service implements OnTouchListener,
             drawButton(view, newX, newY);
             moving = true;
         } else if (event.getAction() == MotionEvent.ACTION_UP) {
-            savePreferencePosition();
+            savePreferencePosition(getResources().getConfiguration().orientation);
             return moving;
         }
 
@@ -353,7 +395,7 @@ public class KeyboardSwitcherService extends Service implements OnTouchListener,
     @Override
     public void onDestroy() {
         if (overlayedButton != null) {
-            savePreferencePosition();
+            savePreferencePosition(getResources().getConfiguration().orientation);
             eraseRemoteView();
         }
         removeNotification();

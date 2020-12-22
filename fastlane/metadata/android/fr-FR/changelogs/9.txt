@@ -1,0 +1,2 @@
+ * Correction du lancement au démarrage
+ * Sauvegarde de la position pour chaque orientation
