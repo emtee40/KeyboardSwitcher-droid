@@ -41,11 +41,11 @@ public class PreferenceActivity extends AppCompatActivity implements WarningFloa
 
         // Manage fragment who contains list of preferences
         preferenceFragment = (PreferenceFragment) getSupportFragmentManager().findFragmentByTag(TAG_PREFERENCE_FRAGMENT);
-        if(preferenceFragment == null)
+        if (preferenceFragment == null)
             preferenceFragment = new PreferenceFragment();
 
         aboutFragment = getSupportFragmentManager().findFragmentByTag(TAG_ABOUT_FRAGMENT);
-        if(aboutFragment == null)
+        if (aboutFragment == null)
             aboutFragment =  new AboutFragment();
 
         if (savedInstanceState != null) {
@@ -72,8 +72,7 @@ public class PreferenceActivity extends AppCompatActivity implements WarningFloa
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
         if (prefs.getBoolean(getString(R.string.app_warning_key), true)) {
             AppDialog dialogFragment = new AppDialog();
-            if (getSupportFragmentManager() != null)
-                dialogFragment.show(getSupportFragmentManager(), "application_dialog");
+            dialogFragment.show(getSupportFragmentManager(), "application_dialog");
         }
     }
 

@@ -39,24 +39,6 @@ public class PreferenceFragment extends ChromaPreferenceFragmentCompat {
     private boolean tryToOpenExternalDialog;
 
 	@Override
-	public void onResume() {
-		super.onResume();
-
-		tryToOpenExternalDialog = false;
-		// To unchecked the preference floating button if not allowed by the system
-		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-			if (!Settings.canDrawOverlays(getActivity())) {
-				if (preferenceFloatingButton != null)
-					preferenceFloatingButton.setChecked(false);
-			}
-		}
-		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
-				&& preferenceFloatingButton.isChecked()) {
-			preferenceNotification.setEnabled(false);
-		}
-	}
-
-	@Override
     public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
         setPreferencesFromResource(R.xml.preferences, rootKey);
 
@@ -103,8 +85,7 @@ public class PreferenceFragment extends ChromaPreferenceFragmentCompat {
 					preferenceFloatingButton.setChecked(false);
 					if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
 						WarningFloatingButtonDialog dialogFragment = new WarningFloatingButtonDialog();
-						if (getParentFragmentManager() != null)
-							dialogFragment.show(getParentFragmentManager(), "warning_floating_button_dialog");
+						dialogFragment.show(getParentFragmentManager(), "warning_floating_button_dialog");
 					} else {
 						startFloatingButtonAndCheckButton();
 					}
@@ -136,6 +117,22 @@ public class PreferenceFragment extends ChromaPreferenceFragmentCompat {
 					}
 				});
     }
+
+	@Override
+	public void onResume() {
+		super.onResume();
+
+		tryToOpenExternalDialog = false;
+		// To unchecked the preference floating button if not allowed by the system
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+			if (!Settings.canDrawOverlays(getActivity())) {
+				if (preferenceFloatingButton != null)
+					preferenceFloatingButton.setChecked(false);
+			}
+		}
+		preferenceNotification.setEnabled(Build.VERSION.SDK_INT < Build.VERSION_CODES.O
+				|| !preferenceFloatingButton.isChecked());
+	}
 
     @Override
     /*
