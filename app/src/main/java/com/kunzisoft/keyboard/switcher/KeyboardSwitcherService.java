@@ -267,7 +267,9 @@ public class KeyboardSwitcherService extends Service implements OnTouchListener,
         super.onConfigurationChanged(newConfig);
 
         eraseRemoteView();
-        createRemoteView();
+        if (preferences.getBoolean(getString(R.string.settings_floating_button_key), false)) {
+            createRemoteView();
+        }
     }
 
     private void setOverlayedDrawableResource(@DrawableRes int newDrawableResourceId) {
