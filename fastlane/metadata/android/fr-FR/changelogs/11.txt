@@ -1,0 +1,1 @@
+ * Correction du bouton flottant pendant le changement d'orientation
