@@ -162,6 +162,8 @@ public class KeyboardSwitcherService extends Service implements OnTouchListener,
             if (intent.getAction().equals(FLOATING_BUTTON_START)
                 && preferences.getBoolean(getString(R.string.settings_floating_button_key), false)) {
                 createRemoteView();
+            } else {
+                eraseRemoteView();
             }
 
             if (intent.getAction().equals(FLOATING_BUTTON_STOP)) {
@@ -295,32 +297,34 @@ public class KeyboardSwitcherService extends Service implements OnTouchListener,
     }
 
     private void drawButton(View view, int x, int y) {
-        int[] topLeftLocationOnScreen = new int[2];
-        topLeftView.getLocationOnScreen(topLeftLocationOnScreen);
+        if (topLeftView != null
+            && bottomRightView != null) {
+            int[] topLeftLocationOnScreen = new int[2];
+            topLeftView.getLocationOnScreen(topLeftLocationOnScreen);
 
-        int[] bottomRightLocationOnScreen = new int[2];
-        bottomRightView.getLocationOnScreen(bottomRightLocationOnScreen);
+            int[] bottomRightLocationOnScreen = new int[2];
+            bottomRightView.getLocationOnScreen(bottomRightLocationOnScreen);
 
-        WindowManager.LayoutParams params = (LayoutParams) overlayedButton.getLayoutParams();
+            WindowManager.LayoutParams params = (LayoutParams) overlayedButton.getLayoutParams();
 
-        // To stick the button on the edge
-        if (x <= view.getMeasuredWidth() / 2) {
-            x = topLeftLocationOnScreen[0];
-            setOverlayedDrawableResource(R.drawable.ic_keyboard_left_white_32dp);
+            // To stick the button on the edge
+            if (x <= view.getMeasuredWidth() / 2) {
+                x = topLeftLocationOnScreen[0];
+                setOverlayedDrawableResource(R.drawable.ic_keyboard_left_white_32dp);
+            } else if (x >= bottomRightLocationOnScreen[0] - view.getMeasuredWidth() / 2) {
+                x = bottomRightLocationOnScreen[0];
+                setOverlayedDrawableResource(R.drawable.ic_keyboard_right_white_32dp);
+            } else {
+                setOverlayedDrawableResource(R.drawable.ic_keyboard_white_32dp);
+            }
+
+            params.x = x - (bottomRightLocationOnScreen[0] + topLeftLocationOnScreen[0]) / 2;
+            params.y = y - (bottomRightLocationOnScreen[1] + topLeftLocationOnScreen[1]) / 2;
+            currentPosition.positionToSave[0] = params.x;
+            currentPosition.positionToSave[1] = params.y;
+
+            windowManager.updateViewLayout(overlayedButton, params);
         }
-        else if (x >= bottomRightLocationOnScreen[0] - view.getMeasuredWidth() / 2) {
-            x = bottomRightLocationOnScreen[0];
-            setOverlayedDrawableResource(R.drawable.ic_keyboard_right_white_32dp);
-        } else {
-            setOverlayedDrawableResource(R.drawable.ic_keyboard_white_32dp);
-        }
-
-        params.x = x - (bottomRightLocationOnScreen[0] + topLeftLocationOnScreen[0]) / 2;
-        params.y = y - (bottomRightLocationOnScreen[1] + topLeftLocationOnScreen[1]) / 2;
-        currentPosition.positionToSave[0] = params.x;
-        currentPosition.positionToSave[1] = params.y;
-
-        windowManager.updateViewLayout(overlayedButton, params);
     }
 
     @SuppressLint("ClickableViewAccessibility")

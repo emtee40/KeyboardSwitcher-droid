@@ -8,13 +8,14 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 import androidx.preference.PreferenceManager;
 
+import com.kunzisoft.keyboard.switcher.KeyboardSwitcherService;
 import com.kunzisoft.keyboard.switcher.R;
-import com.kunzisoft.keyboard.switcher.boot.BootUpActivity;
 import com.kunzisoft.keyboard.switcher.dialogs.AppDialog;
 import com.kunzisoft.keyboard.switcher.dialogs.WarningFloatingButtonDialog;
 
@@ -41,18 +42,18 @@ public class PreferenceActivity extends AppCompatActivity implements WarningFloa
 
         // Manage fragment who contains list of preferences
         preferenceFragment = (PreferenceFragment) getSupportFragmentManager().findFragmentByTag(TAG_PREFERENCE_FRAGMENT);
-        if(preferenceFragment == null)
+        if (preferenceFragment == null)
             preferenceFragment = new PreferenceFragment();
 
         aboutFragment = getSupportFragmentManager().findFragmentByTag(TAG_ABOUT_FRAGMENT);
-        if(aboutFragment == null)
+        if (aboutFragment == null)
             aboutFragment =  new AboutFragment();
 
         if (savedInstanceState != null) {
             aboutFragmentActive = savedInstanceState.getBoolean(KEY_ABOUT_ACTIVE, aboutFragmentActive);
         }
 
-        startActivity(new Intent(this, BootUpActivity.class));
+        startService(new Intent(this, KeyboardSwitcherService.class));
 
         Fragment fragmentToShow;
         String tagToSave;
@@ -72,13 +73,12 @@ public class PreferenceActivity extends AppCompatActivity implements WarningFloa
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
         if (prefs.getBoolean(getString(R.string.app_warning_key), true)) {
             AppDialog dialogFragment = new AppDialog();
-            if (getSupportFragmentManager() != null)
-                dialogFragment.show(getSupportFragmentManager(), "application_dialog");
+            dialogFragment.show(getSupportFragmentManager(), "application_dialog");
         }
     }
 
     @Override
-    protected void onSaveInstanceState(Bundle outState) {
+    protected void onSaveInstanceState(@NonNull Bundle outState) {
         super.onSaveInstanceState(outState);
 
         outState.putBoolean(KEY_ABOUT_ACTIVE, aboutFragmentActive);
@@ -129,7 +129,7 @@ public class PreferenceActivity extends AppCompatActivity implements WarningFloa
                 } else {
                     switchToAboutScreen();
                 }
-            return true;
+                return true;
             case android.R.id.home:
                 switchToPreferenceScreen();
                 return true;
