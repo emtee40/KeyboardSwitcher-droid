@@ -162,6 +162,8 @@ public class KeyboardSwitcherService extends Service implements OnTouchListener,
             if (intent.getAction().equals(FLOATING_BUTTON_START)
                 && preferences.getBoolean(getString(R.string.settings_floating_button_key), false)) {
                 createRemoteView();
+            } else {
+                eraseRemoteView();
             }
 
             if (intent.getAction().equals(FLOATING_BUTTON_STOP)) {
