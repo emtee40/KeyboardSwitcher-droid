@@ -21,6 +21,9 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <meta-data
+                android:name="android.app.shortcuts"
+                android:resource="@xml/shortcuts" />
         </activity>
         <activity
             android:name=".KeyboardManagerActivity"
@@ -50,6 +53,11 @@
                 android:resource="@xml/keyboard_widget_info" />
         </receiver>
 
+        <receiver android:name=".KeyboardSwitcherBroadcastReceiver">
+            <intent-filter>
+                <action android:name="com.kunzisoft.keyboard.switcher.SHOW_KEYBOARD_SWITCHER" />
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:enabled="true"
+        android:icon="@drawable/ic_keyboard_white_32dp"
+        android:shortcutId="show_keyboard_switcher"
+        android:shortcutShortLabel="@string/shortcut_short_label_show_keyboard_switcher">
+        <intent
+            android:action="com.kunzisoft.keyboard.switcher.SHOW_KEYBOARD_SWITCHER"
+            android:targetClass="com.kunzisoft.keyboard.switcher.KeyboardSwitcherBroadcastReceiver"
+            android:targetPackage="com.kunzisoft.keyboard.switcher" />
+    </shortcut>
+</shortcuts>
