@@ -21,9 +21,6 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-            <meta-data
-                android:name="android.app.shortcuts"
-                android:resource="@xml/shortcuts" />
         </activity>
         <activity
             android:name=".KeyboardManagerActivity"
@@ -32,6 +29,13 @@
                 <action android:name="android.intent.action.VIEW" />
             </intent-filter>
         </activity>
+
+        <activity android:name=".CreateShortcutActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.CREATE_SHORTCUT" />
+            </intent-filter>
+        </activity>
+
         <receiver
             android:enabled="true"
             android:name=".boot.BootUpReceiver"
@@ -51,12 +55,6 @@
             </intent-filter>
             <meta-data android:name="android.appwidget.provider"
                 android:resource="@xml/keyboard_widget_info" />
-        </receiver>
-
-        <receiver android:name=".KeyboardSwitcherBroadcastReceiver">
-            <intent-filter>
-                <action android:name="com.kunzisoft.keyboard.switcher.SHOW_KEYBOARD_SWITCHER" />
-            </intent-filter>
         </receiver>
     </application>
 
