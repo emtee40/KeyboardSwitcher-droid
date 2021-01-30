@@ -187,6 +187,7 @@ public class KeyboardSwitcherService extends Service implements OnTouchListener,
     }
 
     private void createRemoteView() {
+        eraseRemoteView();
         try {
             // check Button Position
             lockedButton = preferences.getBoolean(getString(R.string.settings_floating_button_lock_key), false);
@@ -278,7 +279,6 @@ public class KeyboardSwitcherService extends Service implements OnTouchListener,
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
 
-        eraseRemoteView();
         if (preferences.getBoolean(getString(R.string.settings_floating_button_key), false)) {
             createRemoteView();
         }
