@@ -1,0 +1,2 @@
+ * Fix notification activation
+ * Fix translations

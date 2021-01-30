@@ -144,30 +144,42 @@ public class KeyboardSwitcherService extends Service implements OnTouchListener,
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            startForeground(NOTIFICATION_ID, notificationBuilder().build());
-        }
+        if (intent != null) {
+            boolean notificationPrefActive = preferences.getBoolean(getString(R.string.settings_notification_key), false);
+            boolean floatingButtonPrefActive = preferences.getBoolean(getString(R.string.settings_floating_button_key), false);
 
-        if (intent != null
-                && intent.getAction() != null) {
-            if (intent.getAction().equals(NOTIFICATION_START)
-                && preferences.getBoolean(getString(R.string.settings_notification_key), false)) {
-                NotificationManagerCompat.from(this).notify(NOTIFICATION_ID, notificationBuilder().build());
+            if (intent.getAction() == null) {
+                if (floatingButtonPrefActive)
+                    intent.setAction(FLOATING_BUTTON_START);
+                else if (notificationPrefActive)
+                    intent.setAction(NOTIFICATION_START);
             }
 
-            if (intent.getAction().equals(NOTIFICATION_STOP)) {
-                removeNotification();
-            }
+            if (intent.getAction() != null) {
 
-            if (intent.getAction().equals(FLOATING_BUTTON_START)
-                && preferences.getBoolean(getString(R.string.settings_floating_button_key), false)) {
-                createRemoteView();
-            } else {
-                eraseRemoteView();
-            }
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    startForeground(NOTIFICATION_ID, notificationBuilder().build());
+                }
 
-            if (intent.getAction().equals(FLOATING_BUTTON_STOP)) {
-                eraseRemoteView();
+                if (intent.getAction().equals(NOTIFICATION_START)
+                    && notificationPrefActive) {
+                    NotificationManagerCompat.from(this).notify(NOTIFICATION_ID, notificationBuilder().build());
+                }
+
+                if (intent.getAction().equals(NOTIFICATION_STOP)) {
+                    removeNotification();
+                }
+
+                if (intent.getAction().equals(FLOATING_BUTTON_START)
+                    && floatingButtonPrefActive) {
+                    createRemoteView();
+                } else {
+                    eraseRemoteView();
+                }
+
+                if (intent.getAction().equals(FLOATING_BUTTON_STOP)) {
+                    eraseRemoteView();
+                }
             }
         }
 
