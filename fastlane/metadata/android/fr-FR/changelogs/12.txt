@@ -1,2 +1,3 @@
+ * Création d'un raccourci pour une meilleure intégration avec Key Mapper(Merci à @sds100)
  * Correction de l'activation de la notification
  * Correction des traductions
