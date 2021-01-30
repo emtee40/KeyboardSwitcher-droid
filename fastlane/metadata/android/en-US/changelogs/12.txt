@@ -1,0 +1,3 @@
+ * Create shortcut for a better integration in Key Mapper(Thx to @sds100)
+ * Fix notification activation
+ * Fix translations
