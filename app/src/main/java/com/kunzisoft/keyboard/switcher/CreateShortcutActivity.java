@@ -1,7 +1,6 @@
 package com.kunzisoft.keyboard.switcher;
 
 import android.app.Activity;
-import android.content.ComponentName;
 import android.content.Intent;
 import android.os.Bundle;
 
@@ -25,7 +24,7 @@ public class CreateShortcutActivity extends AppCompatActivity {
         String shortcutLabel = getString(R.string.shortcut_short_label_show_keyboard_switcher);
 
         IconCompat shortcutIcon =
-                IconCompat.createWithResource(this, R.drawable.ic_keyboard_white_32dp);
+                IconCompat.createWithResource(this, R.drawable.ic_shortcut_24dp);
 
         Intent intent = new Intent(this, KeyboardManagerActivity.class);
         intent.setAction(Intent.ACTION_VIEW);
